@@ -1,61 +1,52 @@
-//
-//  ContentView.swift
-//  Planlayıcı
-//
-//  Created by Cealius on 1.02.2026.
-//
-
 import SwiftUI
 import SwiftData
 
-struct ContentView: View {
-    @Environment(\.modelContext) private var modelContext
-    @Query private var items: [Item]
+struct MainTabView: View {
+    @State private var selectedTab: Int = 0
+    
+    // init removed to use default system appearance
+
 
     var body: some View {
-        NavigationSplitView {
-            List {
-                ForEach(items) { item in
-                    NavigationLink {
-                        Text("Item at \(item.timestamp, format: Date.FormatStyle(date: .numeric, time: .standard))")
-                    } label: {
-                        Text(item.timestamp, format: Date.FormatStyle(date: .numeric, time: .standard))
-                    }
+        TabView(selection: $selectedTab) {
+            DailyPlannerView()
+                .tabItem {
+                    Label("Günün Planı", systemImage: "list.bullet.clipboard")
                 }
-                .onDelete(perform: deleteItems)
-            }
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    EditButton()
+                .tag(0)
+            
+            MonthlyCalendarView()
+                .tabItem {
+                    Label("Takvim", systemImage: "calendar")
                 }
-                ToolbarItem {
-                    Button(action: addItem) {
-                        Label("Add Item", systemImage: "plus")
-                    }
+                .tag(1)
+            
+            NotesView()
+                .tabItem {
+                    Label("Notlar", systemImage: "note.text")
                 }
-            }
-        } detail: {
-            Text("Select an item")
+                .tag(2)
+            
+            StatisticsView()
+                .tabItem {
+                    Label("İstatistik", systemImage: "chart.bar.xaxis")
+                }
+                .tag(3)
+            
+            SettingsView()
+                .tabItem {
+                    Label("Ayarlar", systemImage: "gear")
+                }
+                .tag(4)
         }
-    }
 
-    private func addItem() {
-        withAnimation {
-            let newItem = Item(timestamp: Date())
-            modelContext.insert(newItem)
+
+        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("didTapReportNotification"))) { _ in
+            selectedTab = 3 // Switch to Statistics tab
         }
-    }
-
-    private func deleteItems(offsets: IndexSet) {
-        withAnimation {
-            for index in offsets {
-                modelContext.delete(items[index])
-            }
+        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("didTapMorningSummary"))) { _ in
+            selectedTab = 0 // Switch to Daily Planner tab
         }
     }
 }
 
-#Preview {
-    ContentView()
-        .modelContainer(for: Item.self, inMemory: true)
-}
